@@ -3,6 +3,7 @@ import {
   type ActionFunctionArgs,
   data,
   Form,
+  Link,
   type LoaderFunctionArgs,
   redirect,
   useActionData,
@@ -102,12 +103,11 @@ export default function Login() {
   return (
     <Layout>
       <div className="h-full justify-center items-center flex flex-col gap-y-4">
-        <button
-          onClick={() => setAction(action == "login" ? "register" : "login")}
-          className="absolute top-8 right-8 rounded-xl bg-pink-400 font-semibold px-3 py-2 transition duration-300 ease-in-out hover:bg-pink-500 hover:-translate-y-1"
-        >
-          {action === "login" ? "Loo konto" : "Logi sisse"}
-        </button>
+        <Link to="/register">
+          <button className="absolute top-8 right-8 rounded-xl bg-pink-400 font-semibold px-3 py-2 transition duration-300 ease-in-out hover:bg-pink-500 hover:-translate-y-1">
+            Loo konto
+          </button>
+        </Link>
         <h2 className="text-5xl font-extrabold text-pink-200">Go-go-gossip</h2>
 
         <p className="font-semibold text-slate-300">
