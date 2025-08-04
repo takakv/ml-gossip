@@ -11,6 +11,8 @@ export default [
   route("privaatsuspoliitika", "routes/privacypolicy.tsx"),
   route("kontakt", "routes/contact.tsx"),
   route("login", "routes/login.tsx"),
+  route("register", "routes/register.tsx"),
+  route("reset-password", "routes/reset-password.tsx"),
   route("account", "routes/account.tsx"),
   layout("routes/posts.tsx", [
     ...prefix("posts", [

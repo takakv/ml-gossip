@@ -4,6 +4,31 @@ import type { SetPasswordForm } from "./types.server";
 
 import { prisma } from "./db.server";
 
+export const checkCode = async (code: string) => {
+  let rawToken = "";
+  try {
+    rawToken = CrockfordBase32.decode(code, {
+      asNumber: true,
+    }).toString();
+  } catch (error) {
+    return "Vigane kood";
+  }
+
+  const registrationInfo = await prisma.inviteCode.findUnique({
+    where: { id: rawToken },
+  });
+
+  if (!registrationInfo) {
+    return "Vigane kood";
+  }
+
+  if (registrationInfo.used) {
+    return "Koodi on juba kasutatud";
+  }
+
+  return null;
+};
+
 export const createUser = async (
   username: string,
   password: string,

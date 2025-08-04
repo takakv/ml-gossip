@@ -50,10 +50,10 @@ export const PostCard = ({
             </div>
             <p className="line-clamp-5 whitespace-pre-wrap">{content}</p>
             {imageId ? (
-              <div className="flex overflow-hidden">
+              <div className="overflow-hidden max-h-[500px] max-w-[400px] rounded">
                 <img
                   src={cdnPrefix + imageId}
-                  className="max-h-[100px] w-auto"
+                  className="w-auto rounded max-h-[200px]"
                 />
               </div>
             ) : (
