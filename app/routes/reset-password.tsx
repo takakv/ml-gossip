@@ -49,18 +49,22 @@ const ResetPassword = () => {
     const salt = new Uint8Array(16);
     crypto.getRandomValues(salt);
 
+    const memorySize = 65536;
+    const iterations = 3;
+    const parallelism = 4;
+
     const hash = await argon2id({
       password: data.password.trim(),
       salt: salt,
       hashLength: 32,
-      parallelism: 4,
-      iterations: 3,
-      memorySize: 65536,
+      parallelism,
+      iterations,
+      memorySize,
     });
 
     const saltBase64 = toUnpaddedBase64(salt);
     const pwdBase64 = toUnpaddedBase64(hexToBytes(hash));
-    const formattedHash = `$argon2id$v=19$m=65536,t=3,p=4$${saltBase64}$${pwdBase64}`;
+    const formattedHash = `$argon2id$v=19$m=${memorySize},t=${iterations},p=${parallelism}$${saltBase64}$${pwdBase64}`;
 
     setPasswordHash(formattedHash);
   };
