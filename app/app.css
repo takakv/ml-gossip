@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/inter";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -48,7 +50,7 @@
     --font-sans: 'Inter', sans-serif;
     --font-serif: 'Georgia', serif;
     --font-mono: monospace;
-    --radius: 1rem;
+    --radius: 0.625rem;
     --shadow-x: 0px;
     --shadow-y: 4px;
     --shadow-blur: 12px;
@@ -154,7 +156,7 @@
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-ring: var(--sidebar-ring);
 
-    --font-sans: var(--font-sans);
+    --font-sans: 'Inter Variable', sans-serif;
     --font-mono: var(--font-mono);
     --font-serif: var(--font-serif);
 
@@ -178,6 +180,10 @@
     --tracking-wide: calc(var(--tracking-normal) + 0.025em);
     --tracking-wider: calc(var(--tracking-normal) + 0.05em);
     --tracking-widest: calc(var(--tracking-normal) + 0.1em);
+    --font-heading: var(--font-sans);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 @layer base {
@@ -187,5 +193,8 @@
     body {
         @apply bg-background text-foreground;
         letter-spacing: var(--tracking-normal);
+    }
+  html {
+    @apply font-sans;
     }
 }

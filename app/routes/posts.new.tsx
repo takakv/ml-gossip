@@ -6,6 +6,11 @@ import { requireUser } from "~/utils/auth";
 import { ApiError } from "~/lib/api-client";
 import { useCreatePost, useUploadPostImage } from "~/lib/queries/posts";
 
+import { Field, FieldLabel } from "~/components/ui/field.tsx";
+import { Input } from "~/components/ui/input.tsx";
+import { Textarea } from "~/components/ui/textarea.tsx";
+import { Button } from "~/components/ui/button.tsx";
+
 interface FileWithPreview extends File {
   preview: string;
 }
@@ -134,35 +139,32 @@ function NewPostRoute() {
     }
   };
 
-  const borderStyle = "border-2 rounded border-border";
   return (
-    <div className="border-b border-border py-2 px-4">
+    <div className="border-b border-border py-2 px-4 bg-card">
       <p>Loo postitus</p>
       <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-        <div>
-          <label htmlFor="title">Pealkiri:</label>
-          <input
+        <Field>
+          <FieldLabel htmlFor="title">Pealkiri</FieldLabel>
+          <Input
             type="text"
             id="title"
             name="title"
             required
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className={borderStyle + " block bg-background"}
           />
-        </div>
-        <div>
-          <label htmlFor="content">Sisu:</label>
-          <textarea
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="content">Sisu</FieldLabel>
+          <Textarea
             id="content"
             name="content"
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className={borderStyle + " block w-full bg-background"}
           />
           <div
             {...getRootProps()}
-            className="mt-2 flex flex-col items-center p-6 bg-muted rounded border border-dashed border-border"
+            className="mt-2 flex flex-col items-center p-6 bg-muted rounded-2xl border border-dashed border-border"
           >
             <input {...getInputProps()} name="image" />
             {isDragActive ? (
@@ -178,18 +180,14 @@ function NewPostRoute() {
               </>
             )}
           </div>
-        </div>
+        </Field>
         <div className="text-xs font-semibold text-center tracking-wide text-destructive w-full">
           {formError}
         </div>
         <div>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="button text-center px-4 py-2 bg-primary text-primary-foreground rounded"
-          >
+          <Button type="submit" disabled={isSubmitting}>
             Postita
-          </button>
+          </Button>
         </div>
       </form>
     </div>

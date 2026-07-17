@@ -9,6 +9,7 @@ import {
   usePost,
   useSetPostLike,
 } from "~/lib/queries/posts";
+import { Button } from "~/components/ui/button.tsx";
 
 export const Route = createFileRoute("/posts/$postId")({
   component: PostRoute,
@@ -77,29 +78,28 @@ function PostRoute() {
         </div>
       </article>
       {isAdmin && (
-        <div className="py-4 mx-4">
+        <div className="py-4 mx-4 flex gap-2">
           {!post.published && (
-            <button
+            <Button
               type="button"
               disabled={approvePost.isPending}
               onClick={() => approvePost.mutate(postId)}
-              className="bg-primary text-primary-foreground px-4 py-2 rounded mr-4 hover:cursor-pointer"
             >
               Kinnita
-            </button>
+            </Button>
           )}
-          <button
+          <Button
             type="button"
+            variant="destructive"
             disabled={deletePost.isPending}
             onClick={() =>
               deletePost.mutate(postId, {
                 onSuccess: () => navigate({ to: "/posts" }),
               })
             }
-            className="bg-primary text-primary-foreground px-4 py-2 rounded hover:cursor-pointer"
           >
             Kustuta
-          </button>
+          </Button>
         </div>
       )}
     </>

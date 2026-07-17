@@ -9,7 +9,11 @@ import {
   validatePassword,
   validatePasswordConfirmation,
 } from "~/utils/validators";
+
 import { MobileSidebar, Sidebar } from "~/components/sidebar";
+import { Input } from "~/components/ui/input.tsx";
+import { Field, FieldLabel } from "~/components/ui/field.tsx";
+import { Button } from "~/components/ui/button.tsx";
 
 export const Route = createFileRoute("/account")({
   loader: async ({ context, location }) => {
@@ -71,14 +75,13 @@ function AccountRoute() {
               <div className="mt-2">
                 <p>Muuda salasõna</p>
                 <form onSubmit={handleSubmit}>
-                  <div>
-                    <label htmlFor="password">Uus salasõna</label>
+                  <Field>
+                    <FieldLabel htmlFor="password">Uus salasõna</FieldLabel>
 
-                    <input
+                    <Input
                       type="password"
                       id="password"
                       name="password"
-                      className="w-full p-2 rounded-xl my-2 bg-background"
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
@@ -87,18 +90,17 @@ function AccountRoute() {
                     <div className="text-xs font-semibold text-center tracking-wide text-destructive w-full">
                       {errors.password || ""}
                     </div>
-                  </div>
+                  </Field>
 
-                  <div>
-                    <label htmlFor="password-confirmation">
+                  <Field>
+                    <FieldLabel htmlFor="password-confirmation">
                       Salasõna kinnitus
-                    </label>
+                    </FieldLabel>
 
-                    <input
+                    <Input
                       type="password"
                       id="password-confirmation"
                       name="password-confirmation"
-                      className="w-full p-2 rounded-xl my-2 bg-background"
                       required
                       value={passwordConfirmation}
                       onChange={(e) => setPasswordConfirmation(e.target.value)}
@@ -107,14 +109,10 @@ function AccountRoute() {
                     <div className="text-xs font-semibold text-center tracking-wide text-destructive w-full">
                       {errors.passwordConfirmation || ""}
                     </div>
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={changePassword.isPending}
-                    className="bg-primary text-primary-foreground px-4 py-2 rounded"
-                  >
+                  </Field>
+                  <Button type="submit" disabled={changePassword.isPending}>
                     Muuda
-                  </button>
+                  </Button>
                 </form>
                 {changePassword.isError ? (
                   <span className="text-destructive">
