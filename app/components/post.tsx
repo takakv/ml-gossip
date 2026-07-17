@@ -1,15 +1,17 @@
 import React from "react";
-import { Link, useFetcher } from "react-router";
+import { Link } from "react-router";
 import { cdnPrefix } from "~/utils/vars";
+import { useSetPostLike } from "~/lib/queries/posts";
+import { useCurrentUser } from "~/lib/queries/user";
 
 interface PostProps {
   id: string;
   title: string;
   content: string | null;
   imageId: string | null;
-  liked: boolean;
+  isLiked: boolean;
   likeCount: number;
-  createdAt: Date;
+  createdAt: string;
 }
 
 export const PostCard = ({
@@ -17,7 +19,7 @@ export const PostCard = ({
   title,
   content,
   imageId,
-  liked,
+  isLiked,
   likeCount,
   createdAt,
 }: PostProps) => {
@@ -32,7 +34,8 @@ export const PostCard = ({
     minute: "2-digit",
   });
 
-  const fetcher = useFetcher();
+  const { data: currentUser } = useCurrentUser();
+  const setLike = useSetPostLike();
 
   return (
     <li className="border-b border-pink-500">
@@ -62,17 +65,23 @@ export const PostCard = ({
           </article>
         </Link>
         <div className="flex mt-2">
-          <fetcher.Form method="post" action={`/posts/${id}`}>
-            <button
-              name="intent"
-              type="submit"
-              value={liked ? "unliked" : "liked"}
-              className="material-symbols-rounded"
-              style={{ fontVariationSettings: `'FILL' ${liked ? 1 : 0}` }}
-            >
-              favorite
-            </button>
-          </fetcher.Form>
+          <button
+            type="button"
+            name="intent"
+            className="material-symbols-rounded"
+            style={{ fontVariationSettings: `'FILL' ${isLiked ? 1 : 0}` }}
+            disabled={!currentUser || setLike.isPending}
+            onClick={() =>
+              currentUser &&
+              setLike.mutate({
+                postId: id,
+                userId: currentUser.id,
+                liked: isLiked,
+              })
+            }
+          >
+            favorite
+          </button>
           <span>{likeCount}</span>
         </div>
       </div>

@@ -7,6 +7,7 @@ interface FormFieldProps {
   value: any;
   onChange?: (...args: any) => any;
   error?: string;
+  disabled?: boolean;
 }
 
 export function FormField({
@@ -16,6 +17,7 @@ export function FormField({
   value,
   onChange = () => {},
   error = "",
+  disabled = false,
 }: FormFieldProps) {
   const [errorText, setErrorText] = useState(error);
 
@@ -37,8 +39,9 @@ export function FormField({
         type={type}
         id={htmlFor}
         name={htmlFor}
-        className="w-full p-2 rounded-xl my-2 bg-white"
+        className="w-full p-2 rounded-xl my-2 bg-white disabled:opacity-60"
         value={value}
+        disabled={disabled}
       />
 
       <div className="text-xs font-semibold text-center tracking-wide text-red-500 w-full">

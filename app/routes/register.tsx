@@ -1,122 +1,101 @@
 import { useState } from "react";
 import {
-  type ActionFunctionArgs,
-  data,
-  Form,
   Link,
   type LoaderFunctionArgs,
   redirect,
-  useActionData,
+  useNavigate,
 } from "react-router";
+import { useMutation } from "@tanstack/react-query";
 
 import { Layout } from "~/components/layout";
 import { FormField } from "~/components/form-field";
-import { getUser, register } from "~/utils/auth.server";
-import { StatusCodes } from "http-status-codes";
-import { validatePassword, validateUsername } from "~/utils/validators.server";
-import { checkCode } from "~/utils/user.server";
-
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const formData = await request.formData();
-  const action = formData.get("_action");
-  let username = formData.get("username");
-  const password = formData.get("password");
-  let inviteCode = formData.get("inviteCode");
-
-  if (typeof action !== "string") {
-    return {
-      errors: { formError: "Vigased vormi andmed" },
-    };
-  }
-
-  if (action === "check-code") {
-    if (typeof inviteCode !== "string") {
-      return {
-        inviteIsValid: false,
-        errors: { inviteCode: "Kood peab olema sõne" },
-      };
-    }
-
-    let errorMessage = await checkCode(inviteCode);
-    if (errorMessage !== null) {
-      return {
-        inviteIsValid: false,
-        errors: { inviteCode: errorMessage },
-      };
-    }
-
-    return { inviteIsValid: true };
-  }
-
-  if (typeof username !== "string" || typeof password !== "string") {
-    return {
-      errors: { formError: "Vigased vormi andmed" },
-    };
-  }
-
-  username = username.toLocaleLowerCase("et");
-
-  const errors = {
-    username: validateUsername(username),
-    password: validatePassword(password),
-  };
-
-  if (Object.values(errors).some(Boolean)) {
-    return { errors };
-  }
-
-  switch (action) {
-    case "register": {
-      inviteCode = inviteCode as string;
-      return await register({ username, password, inviteCode });
-    }
-
-    default:
-      return data(
-        { error: `Vigased vormi andmed` },
-        { status: StatusCodes.BAD_REQUEST },
-      );
-  }
-};
+import { getUser } from "~/utils/auth.server";
+import { ApiError, apiFetch } from "~/lib/api-client";
+import { validatePassword, validateUsername } from "~/utils/validators";
+import type { Role } from "~/lib/queries/user";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   // If there's already a user in the session, redirect to the home page
   return (await getUser(request)) ? redirect("/") : null;
 };
 
+type CodeCheckResponse = { role: Role; username?: string };
+type RegisterResponse = { id: string; username: string; role: string };
+
 export default function Register() {
-  const actionData = useActionData<typeof action>();
+  const navigate = useNavigate();
 
-  const [checkInvite, setCheckInvite] = useState(
-    actionData === undefined ? true : "inviteIsValid" in actionData,
-  );
-  const [codeIsValid, setCodeIsValid] = useState(
-    actionData === undefined
-      ? false
-      : checkInvite
-        ? actionData.inviteIsValid
-        : false,
-  );
-  const [isAnon, setIsAnon] = useState(false);
+  const [inviteCode, setInviteCode] = useState("");
+  const [inviteCodeError, setInviteCodeError] = useState("");
+  const [codeInfo, setCodeInfo] = useState<CodeCheckResponse | null>(null);
 
-  console.log(actionData);
-  console.log("Check invite:", checkInvite);
-  console.log("Code is valid:", codeIsValid);
-  console.log("Invite is valid:", actionData?.inviteIsValid);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{
+    username?: string;
+    password?: string;
+  }>({});
 
-  const [formData, setFormData] = useState({
-    username: actionData?.fields?.username || "",
-    password: actionData?.fields?.password || "",
-    inviteCode: actionData?.fields?.inviteCode || "",
+  const checkCode = useMutation({
+    mutationFn: (code: string) =>
+      apiFetch<CodeCheckResponse>(`/codes/${encodeURIComponent(code)}`),
+    onSuccess: (data) => {
+      setCodeInfo(data);
+      setInviteCodeError("");
+      if (data.role === "READER" && data.username) {
+        setUsername(data.username);
+      }
+    },
+    onError: (err) => {
+      setInviteCodeError(
+        err instanceof ApiError ? err.message : "Serveri viga.",
+      );
+    },
   });
 
-  // Updates the form data when an input changes
-  const handleInputChange = (
-    event: React.ChangeEvent<HTMLInputElement>,
-    field: string,
-  ) => {
-    setFormData((form) => ({ ...form, [field]: event.target.value }));
+  const registerMutation = useMutation({
+    mutationFn: (vars: { token: string; username: string; password: string }) =>
+      apiFetch<RegisterResponse>("/users", {
+        method: "POST",
+        body: JSON.stringify(vars),
+      }),
+    onSuccess: () => navigate("/"),
+  });
+
+  const handleCheckCode = (event: React.FormEvent) => {
+    event.preventDefault();
+    setInviteCodeError("");
+
+    if (inviteCode.length < 5) {
+      setInviteCodeError("Kood peab olema vähemalt 5 tähemärki pikk");
+      return;
+    }
+
+    checkCode.mutate(inviteCode);
   };
+
+  const handleRegister = (event: React.FormEvent) => {
+    event.preventDefault();
+
+    const isAnon = codeInfo?.role === "READER";
+    const cleanedUsername = username.toLocaleLowerCase("et");
+    const nextErrors = {
+      username: isAnon
+        ? undefined
+        : (validateUsername(cleanedUsername) ?? undefined),
+      password: validatePassword(password),
+    };
+    setFieldErrors(nextErrors);
+    if (Object.values(nextErrors).some(Boolean)) return;
+
+    registerMutation.mutate({
+      token: inviteCode,
+      username: cleanedUsername,
+      password,
+    });
+  };
+
+  const codeIsValid = codeInfo !== null;
 
   return (
     <Layout>
@@ -131,64 +110,70 @@ export default function Register() {
         <p className="font-semibold text-slate-300">Loo konto</p>
 
         {!codeIsValid && (
-          <Form method="POST" className="rounded-2xl bg-pink-200 mx-4 p-4">
-            <div className="text-xs font-semibold text-center tracking-wide text-red-500 w-full">
-              {actionData?.error}
-            </div>
+          <form
+            onSubmit={handleCheckCode}
+            className="rounded-2xl bg-pink-200 mx-4 p-4"
+          >
             <FormField
               htmlFor="inviteCode"
               label="Kutsekood"
-              onChange={(e) => handleInputChange(e, "inviteCode")}
-              value={formData.inviteCode}
-              error={actionData?.errors?.inviteCode}
+              onChange={(e) => setInviteCode(e.target.value)}
+              value={inviteCode}
+              error={inviteCodeError}
             />
             <div className="w-full text-center">
               <button
                 type="submit"
-                name="_action"
-                value="check-code"
+                disabled={checkCode.isPending}
                 className="rounded-xl mt-2 bg-pink-400 px-3 py-2 font-semibold transition duration-300 ease-in-out hover:bg-pink-500 hover:-translate-y-1"
               >
                 Jätka
               </button>
             </div>
-          </Form>
+          </form>
         )}
 
         {codeIsValid && (
-          <Form method="POST" className="rounded-2xl bg-pink-200 mx-4 p-4">
+          <form
+            onSubmit={handleRegister}
+            className="rounded-2xl bg-pink-200 mx-4 p-4"
+          >
             <div className="text-xs font-semibold text-center tracking-wide text-red-500 w-full">
-              {actionData?.error}
+              {registerMutation.isError
+                ? registerMutation.error instanceof ApiError
+                  ? registerMutation.error.message
+                  : "Serveri viga."
+                : ""}
             </div>
 
             <FormField
               htmlFor="username"
               label="Kasutajanimi"
-              value={formData.username}
-              onChange={(e) => handleInputChange(e, "username")}
-              error={actionData?.errors?.username}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              error={fieldErrors.username}
+              disabled={codeInfo?.role === "READER"}
             />
 
             <FormField
               htmlFor="password"
               type="password"
               label="Salasõna"
-              value={formData.password}
-              onChange={(e) => handleInputChange(e, "password")}
-              error={actionData?.errors?.password}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              error={fieldErrors.password}
             />
 
             <div className="w-full text-center">
               <button
                 type="submit"
-                name="_action"
-                value="register"
+                disabled={registerMutation.isPending}
                 className="rounded-xl mt-2 bg-pink-400 px-3 py-2 font-semibold transition duration-300 ease-in-out hover:bg-pink-500 hover:-translate-y-1"
               >
                 Loo konto
               </button>
             </div>
-          </Form>
+          </form>
         )}
       </div>
     </Layout>

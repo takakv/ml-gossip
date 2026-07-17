@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   isRouteErrorResponse,
   Links,
@@ -6,6 +7,7 @@ import {
   Scripts,
   ScrollRestoration,
 } from "react-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import type { Route } from "./+types/root";
 import "./app.css";
@@ -42,7 +44,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  const [queryClient] = useState(() => new QueryClient());
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Outlet />
+    </QueryClientProvider>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

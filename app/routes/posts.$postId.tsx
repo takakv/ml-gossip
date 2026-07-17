@@ -1,133 +1,45 @@
-import { prisma } from "~/utils/db.server";
-import { requireUserId } from "~/utils/auth.server";
-import { $Enums } from "@prisma/client";
-import {
-  type ActionFunctionArgs,
-  type LoaderFunctionArgs,
-  redirect,
-  useFetcher,
-  useLoaderData,
-} from "react-router";
+import { useNavigate, useParams, useRouteLoaderData } from "react-router";
+
 import { cdnPrefix } from "~/utils/vars";
-
-export const loader = async ({ request, params }: LoaderFunctionArgs) => {
-  const userId = await requireUserId(request);
-  const userRole = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { role: true },
-  });
-
-  const post = await prisma.post.findUnique({
-    where: { id: params.postId },
-    include: {
-      _count: {
-        select: { likes: true },
-      },
-      likes: {
-        where: {
-          userId: userId,
-        },
-      },
-    },
-  });
-
-  if (!post) {
-    throw new Error("Postitust ei letiud");
-  }
-
-  return { role: userRole?.role, post, published: post.published };
-};
-
-export const action = async ({ request, params }: ActionFunctionArgs) => {
-  const userId = await requireUserId(request);
-  const userRole = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { role: true },
-  });
-
-  if (!userRole) {
-    console.error("Permissions issue:", userId)
-    throw new Error("Õigused puuduvad");
-  }
-
-  const form = await request.formData();
-
-  const postId = params.postId;
-  if (!postId) {
-    throw new Error("Postitust ei letiud");
-  }
-
-  switch (form.get("intent")) {
-    case "approve":
-      if (userRole.role !== $Enums.Role.ADMIN) {
-        throw new Error("Õigused puuduvad");
-      }
-      await prisma.post.update({
-        where: { id: params.postId },
-        data: { published: true, approverId: userId },
-      });
-      return redirect("/posts");
-    case "delete":
-      if (userRole.role !== $Enums.Role.ADMIN) {
-        throw new Error("Õigused puuduvad");
-      }
-      await prisma.post.update({
-        where: { id: params.postId },
-        data: { hidden: true },
-      });
-      return redirect("/posts");
-    case "liked":
-      await prisma.postLike.create({
-        data: { postId, userId },
-      });
-      break;
-    case "unliked":
-      await prisma.postLike.delete({
-        where: { postId_userId: { postId, userId } },
-      });
-      break;
-  }
-
-  return null;
-};
+import { ApiError } from "~/lib/api-client";
+import { useCurrentUser } from "~/lib/queries/user";
+import {
+  useApprovePost,
+  useDeletePost,
+  usePost,
+  useSetPostLike,
+} from "~/lib/queries/posts";
+import type { loader as postsLayoutLoader } from "~/routes/posts";
 
 export default function PostRoute() {
-  const data = useLoaderData<typeof loader>();
+  const { postId } = useParams();
+  const navigate = useNavigate();
 
-  const buttons = (
-    <>
-      <form method="post" className="py-4 mx-4">
-        {!data.published && (
-          <button
-            name="intent"
-            type="submit"
-            value="approve"
-            className="bg-pink-400 px-4 py-2 rounded mr-4 hover:cursor-pointer"
-          >
-            Kinnita
-          </button>
-        )}
-        <button
-          name="intent"
-          type="submit"
-          value="delete"
-          className="bg-pink-400 px-4 py-2 rounded hover:cursor-pointer"
-        >
-          Kustuta
-        </button>
-      </form>
-    </>
-  );
+  const layoutData =
+    useRouteLoaderData<typeof postsLayoutLoader>("routes/posts");
+  const isAdmin = layoutData?.role === "ADMIN";
 
-  const { post } = data;
-  const likeCount = post._count.likes ?? 0;
-  const liked = post.likes.length !== 0;
+  const { data: currentUser } = useCurrentUser();
+  const { data: post, isPending, isError, error } = usePost(postId!);
 
-  const fetcher = useFetcher();
+  const setLike = useSetPostLike();
+  const approvePost = useApprovePost();
+  const deletePost = useDeletePost();
+
+  if (isPending) return <p className="p-4">Laadin...</p>;
+  if (isError)
+    return (
+      <p className="p-4 text-red-500">
+        {error instanceof ApiError ? error.message : "Postitust ei leitud."}
+      </p>
+    );
+
+  const likeCount = post.likeCount;
+  const liked = post.isLiked;
 
   return (
     <>
-      {!data.published ? (
+      {!post.published ? (
         <div className="bg-pink-400 px-4 py-2 text-pink-800">
           <em>Postitus on ootel. Admin peab selle kinnitama.</em>
         </div>
@@ -144,21 +56,51 @@ export default function PostRoute() {
           ""
         )}
         <div className="flex mt-2">
-          <fetcher.Form method="post">
-            <button
-              name="intent"
-              type="submit"
-              value={liked ? "unliked" : "liked"}
-              className="material-symbols-rounded"
-              style={{ fontVariationSettings: `'FILL' ${liked ? 1 : 0}` }}
-            >
-              favorite
-            </button>
-          </fetcher.Form>
+          <button
+            type="button"
+            className="material-symbols-rounded"
+            style={{ fontVariationSettings: `'FILL' ${liked ? 1 : 0}` }}
+            disabled={!currentUser || setLike.isPending}
+            onClick={() =>
+              currentUser &&
+              setLike.mutate({
+                postId: postId!,
+                userId: currentUser.id,
+                liked,
+              })
+            }
+          >
+            favorite
+          </button>
           <span>{likeCount}</span>
         </div>
       </article>
-      {data.role === $Enums.Role.ADMIN && buttons}
+      {isAdmin && (
+        <div className="py-4 mx-4">
+          {!post.published && (
+            <button
+              type="button"
+              disabled={approvePost.isPending}
+              onClick={() => approvePost.mutate(postId!)}
+              className="bg-pink-400 px-4 py-2 rounded mr-4 hover:cursor-pointer"
+            >
+              Kinnita
+            </button>
+          )}
+          <button
+            type="button"
+            disabled={deletePost.isPending}
+            onClick={() =>
+              deletePost.mutate(postId!, {
+                onSuccess: () => navigate("/posts"),
+              })
+            }
+            className="bg-pink-400 px-4 py-2 rounded hover:cursor-pointer"
+          >
+            Kustuta
+          </button>
+        </div>
+      )}
     </>
   );
 }

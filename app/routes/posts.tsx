@@ -1,18 +1,12 @@
 import React from "react";
 
-import { prisma } from "~/utils/db.server";
-import { requireUserId } from "~/utils/auth.server";
+import { requireUser } from "~/utils/auth.server";
 import { MobileSidebar, Sidebar } from "~/components/sidebar";
 import { type LoaderFunctionArgs, Outlet, useLoaderData } from "react-router";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const userId = await requireUserId(request);
-  const userData = (await prisma.user.findUnique({
-    where: { id: userId },
-    select: { role: true },
-  }))!;
-
-  return { role: userData?.role };
+  const user = await requireUser(request);
+  return { role: user.role };
 };
 
 export default function PostsRoute() {

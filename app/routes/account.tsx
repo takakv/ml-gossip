@@ -1,79 +1,53 @@
-import React, { useState } from "react";
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
-import { Form, useActionData, useLoaderData } from "react-router";
-import { StatusCodes } from "http-status-codes";
+import { useState } from "react";
+import type { LoaderFunctionArgs } from "react-router";
+import { useLoaderData } from "react-router";
+import { useMutation } from "@tanstack/react-query";
 
-import { prisma } from "~/utils/db.server";
-import { requireUserId } from "~/utils/auth.server";
-import { badRequest } from "~/utils/request.server";
+import { requireUser } from "~/utils/auth.server";
+import { ApiError, apiFetch } from "~/lib/api-client";
 import {
   validatePassword,
   validatePasswordConfirmation,
-} from "~/utils/validators.server";
-import { setUserPassword } from "~/utils/user.server";
-
+} from "~/utils/validators";
 import { MobileSidebar, Sidebar } from "~/components/sidebar";
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const userId = await requireUserId(request);
-
-  const formData = await request.formData();
-  const password = formData.get("password");
-  const passwordConfirmation = formData.get("password-confirmation");
-
-  if (
-    typeof password !== "string" ||
-    typeof passwordConfirmation !== "string"
-  ) {
-    return badRequest({
-      fieldErrors: null,
-      fields: null,
-      formError: "Vigased vormi andmed",
-    });
-  }
-
-  const errors = {
-    password: validatePassword(password),
-    passwordConfirmation: validatePasswordConfirmation(
-      password,
-      passwordConfirmation,
-    ),
-  };
-
-  if (Object.values(errors).some(Boolean)) {
-    return { errors };
-  }
-
-  const res = await setUserPassword({ userId, password });
-  if (res) return { status: StatusCodes.OK };
-  return { error: "", status: StatusCodes.INTERNAL_SERVER_ERROR };
-};
-
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const userId = await requireUserId(request);
-  const userData = (await prisma.user.findUnique({
-    where: { id: userId },
-    select: { role: true, username: true },
-  }))!;
-
-  return { role: userData.role, username: userData.username };
+  const user = await requireUser(request);
+  return { role: user.role, username: user.username };
 };
 
 export default function AccountRoute() {
   const data = useLoaderData<typeof loader>();
 
-  const actionData = useActionData<typeof action>();
-  const [formData, setFormData] = useState({
-    password: actionData?.fields?.password || "",
-    passwordConfirmation: actionData?.fields?.passwordConfirmation || "",
+  const [password, setPassword] = useState("");
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
+  const [errors, setErrors] = useState<{
+    password?: string;
+    passwordConfirmation?: string;
+  }>({});
+
+  const changePassword = useMutation({
+    mutationFn: (newPassword: string) =>
+      apiFetch("/account/change-password", {
+        method: "POST",
+        body: JSON.stringify({ newPassword }),
+      }),
   });
 
-  // Updates the form data when an input changes
-  const handleInputChange = (
-    event: React.ChangeEvent<HTMLInputElement>,
-    field: string,
-  ) => {
-    setFormData((form) => ({ ...form, [field]: event.target.value }));
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+
+    const nextErrors = {
+      password: validatePassword(password),
+      passwordConfirmation: validatePasswordConfirmation(
+        password,
+        passwordConfirmation,
+      ),
+    };
+    setErrors(nextErrors);
+    if (Object.values(nextErrors).some(Boolean)) return;
+
+    changePassword.mutate(password);
   };
 
   return (
@@ -93,7 +67,7 @@ export default function AccountRoute() {
               </div>
               <div className="mt-2">
                 <p>Muuda salasõna</p>
-                <Form method="POST">
+                <form onSubmit={handleSubmit}>
                   <div>
                     <label htmlFor="password">Uus salasõna</label>
 
@@ -103,10 +77,12 @@ export default function AccountRoute() {
                       name="password"
                       className="w-full p-2 rounded-xl my-2 bg-white"
                       required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                     />
 
                     <div className="text-xs font-semibold text-center tracking-wide text-red-500 w-full">
-                      {actionData?.errors?.password || ""}
+                      {errors.password || ""}
                     </div>
                   </div>
 
@@ -121,20 +97,30 @@ export default function AccountRoute() {
                       name="password-confirmation"
                       className="w-full p-2 rounded-xl my-2 bg-white"
                       required
+                      value={passwordConfirmation}
+                      onChange={(e) => setPasswordConfirmation(e.target.value)}
                     />
 
                     <div className="text-xs font-semibold text-center tracking-wide text-red-500 w-full">
-                      {actionData?.errors?.passwordConfirmation || ""}
+                      {errors.passwordConfirmation || ""}
                     </div>
                   </div>
                   <button
                     type="submit"
+                    disabled={changePassword.isPending}
                     className="bg-pink-400 px-4 py-2 rounded"
                   >
                     Muuda
                   </button>
-                </Form>
-                {actionData?.status === StatusCodes.OK ? (
+                </form>
+                {changePassword.isError ? (
+                  <span className="text-red-500">
+                    {changePassword.error instanceof ApiError
+                      ? changePassword.error.message
+                      : "Serveri viga."}
+                  </span>
+                ) : null}
+                {changePassword.isSuccess ? (
                   <span>Salasõna edukalt muudetud!</span>
                 ) : null}
               </div>

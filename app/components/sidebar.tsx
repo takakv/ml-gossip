@@ -1,9 +1,9 @@
 import React from "react";
 import { Link } from "react-router";
-import { $Enums } from "@prisma/client";
+import type { Role } from "~/lib/queries/user";
 
 interface SidebarProps {
-  role: $Enums.Role;
+  role: Role;
 }
 
 interface SidebarEntryProps {
@@ -27,8 +27,8 @@ const SidebarEntry = ({ link, icon, title }: SidebarEntryProps) => {
 };
 
 export const Sidebar = ({ role }: SidebarProps) => {
-  const isAdmin = role === $Enums.Role.ADMIN;
-  const isAnon = role === $Enums.Role.READER;
+  const isAdmin = role === "ADMIN";
+  const isAnon = role === "READER";
 
   return (
     <header className="hidden sm:block h-screen border-pink-500 border-r py-8">
@@ -62,8 +62,8 @@ export const Sidebar = ({ role }: SidebarProps) => {
 };
 
 export const MobileSidebar = ({ role }: SidebarProps) => {
-  const isAdmin = role === $Enums.Role.ADMIN;
-  const isAnon = role === $Enums.Role.READER;
+  const isAdmin = role === "ADMIN";
+  const isAnon = role === "READER";
 
   return (
     <div className="sm:hidden z-10">

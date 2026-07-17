@@ -1,64 +1,26 @@
-import { prisma } from "~/utils/db.server";
-import { requireUserId } from "~/utils/auth.server";
-import { $Enums } from "@prisma/client";
-import { PostCard } from "~/components/post";
-import React from "react";
-import { type LoaderFunctionArgs, redirect, useLoaderData } from "react-router";
+import {
+  type LoaderFunctionArgs,
+  redirect,
+  useSearchParams,
+} from "react-router";
+
+import { requireUser } from "~/utils/auth.server";
+import { PostList } from "~/components/post-list";
+import { useWaitlistPosts } from "~/lib/queries/posts";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const userId = await requireUserId(request);
-  const userData = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { role: true, shift: true },
-  });
+  const user = await requireUser(request);
 
-  if (!userData || userData.role !== $Enums.Role.ADMIN) {
+  if (user.role !== "ADMIN") {
     throw redirect(`/`);
   }
 
-  const rawPosts = await prisma.post.findMany({
-    where: { shift: userData.shift, published: false, hidden: false },
-    orderBy: { createdAt: "desc" },
-    include: {
-      _count: {
-        select: { likes: true },
-      },
-      likes: { where: { userId } },
-    },
-  });
-
-  const posts = rawPosts.map((post) => {
-    return {
-      id: post.id,
-      title: post.title,
-      content: post.content,
-      imageId: post.imageId,
-      liked: post.likes.length > 0,
-      likeCount: post._count.likes ?? 0,
-      createdAt: post.createdAt,
-    };
-  });
-
-  return { posts };
+  return null;
 };
 
 export default function ApprovePostRoute() {
-  const data = useLoaderData<typeof loader>();
+  const [searchParams] = useSearchParams();
+  const page = parseInt(searchParams.get("page") ?? "1", 10) || 1;
 
-  return (
-    <ul>
-      {data.posts.map((post) => (
-        <PostCard
-          key={post.id}
-          id={post.id}
-          title={post.title}
-          content={post.content}
-          imageId={post.imageId}
-          liked={post.liked}
-          likeCount={post.likeCount}
-          createdAt={post.createdAt}
-        />
-      ))}
-    </ul>
-  );
+  return <PostList query={useWaitlistPosts(page)} />;
 }

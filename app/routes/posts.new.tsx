@@ -1,210 +1,39 @@
-import { rename } from "fs/promises";
-import { createHash } from "node:crypto";
-import { createReadStream, rmSync } from "node:fs";
-
 import { useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { type ActionFunctionArgs, Form, redirect } from "react-router";
-import {
-  type FileUpload,
-  MaxFilesExceededError,
-  MaxFileSizeExceededError,
-  parseFormData,
-} from "@mjackson/form-data-parser";
-import { openFile, writeFile } from "@mjackson/lazy-file/fs";
-import { v4 as uuidv4 } from "uuid";
+import { type LoaderFunctionArgs, redirect, useNavigate } from "react-router";
 
-import { prisma } from "~/utils/db.server";
-import { requireUserId } from "~/utils/auth.server";
-import { badRequest } from "~/utils/request.server";
-import { uploadFileToCDN } from "~/utils/cdn.server";
+import { requireUser } from "~/utils/auth.server";
+import { ApiError } from "~/lib/api-client";
+import { useCreatePost, useUploadPostImage } from "~/lib/queries/posts";
 
 interface FileWithPreview extends File {
   preview: string;
 }
 
-type newPostType = {
-  title: string;
-  content?: string;
-  imageId?: string;
-};
-
 const ONE_MB = Math.pow(2, 20);
 const MAX_FILE_SIZE = 5 * ONE_MB;
-const IMG_DIR = "./tmp";
 
-export const action = async ({ request }: ActionFunctionArgs) => {
-  const userId = await requireUserId(request);
-  const userData = (await prisma.user.findUnique({
-    where: { id: userId },
-    select: { shift: true, role: true, username: true },
-  }))!;
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const user = await requireUser(request);
 
-  if (userData.role === "READER") {
-    return badRequest({
-      fieldErrors: null,
-      fields: null,
-      formError: "Postitamine ei ole lubatud.",
-    });
+  if (user.role === "READER") {
+    throw redirect("/posts");
   }
 
-  // Create a temporary file identifier
-  const tempId = uuidv4();
-  const filePathTemp = `${IMG_DIR}/${tempId}.tmp`;
-  let imageType = "";
-
-  const uploadHandler = async (fileUpload: FileUpload) => {
-    if (
-      fileUpload.fieldName === "image" &&
-      fileUpload.type.startsWith("image/")
-    ) {
-      if (fileUpload.size >= MAX_FILE_SIZE) {
-        imageType = "failed";
-        return null;
-      }
-      await writeFile(filePathTemp, fileUpload);
-      imageType = fileUpload.type;
-      return openFile(filePathTemp);
-    }
-  };
-
-  let formData: FormData;
-  try {
-    formData = await parseFormData(
-      request,
-      {
-        maxFiles: 1,
-        maxFileSize: MAX_FILE_SIZE,
-      },
-      uploadHandler,
-    );
-  } catch (error) {
-    if (error instanceof MaxFilesExceededError) {
-      console.error("Request may not contain more than 1 file");
-      return badRequest({
-        fieldErrors: null,
-        fields: null,
-        formError: "Postitada saab vaid ühe faili.",
-      });
-    } else if (error instanceof MaxFileSizeExceededError) {
-      console.error("Files may not be larger than 5 MiB");
-      return badRequest({
-        fieldErrors: null,
-        fields: null,
-        formError: "Fail on liiga suur.",
-      });
-    } else {
-      console.error("An unexpected error occurred:", error);
-      return badRequest({
-        fieldErrors: null,
-        fields: null,
-        formError: "Serveri viga.",
-      });
-    }
-  }
-
-  const title = formData.get("title");
-  const content = formData.get("content");
-  const image = formData.get("image");
-
-  if (imageType === "failed") {
-    return badRequest({
-      fieldErrors: null,
-      fields: null,
-      formError: "File size too large.",
-    });
-  }
-
-  if (typeof title !== "string" || (content && typeof content !== "string")) {
-    return badRequest({
-      fieldErrors: null,
-      fields: null,
-      formError: "Form not submitted correctly.",
-    });
-  }
-
-  if (title.length === 0) {
-    return badRequest({
-      fieldErrors: null,
-      fields: null,
-      formError: "Title cannot be empty.",
-    });
-  }
-
-  const hasImage = image && (image as Blob).size !== 0;
-
-  if (!content && !hasImage) {
-    return badRequest({
-      fieldErrors: null,
-      fields: null,
-      formError: "There must be text or an image.",
-    });
-  }
-
-  let filename = "";
-
-  if (hasImage) {
-    const imageFile = image as File;
-    try {
-      const fileHash: string = await new Promise((resolve, reject) => {
-        const hash = createHash("sha256");
-        const rs = createReadStream(filePathTemp);
-        rs.on("error", reject);
-        rs.on("data", (chunk) => hash.update(chunk));
-        rs.on("end", () => resolve(hash.digest("hex")));
-      });
-
-      let extension = "";
-      switch (imageType) {
-        case "image/png":
-          extension = ".png";
-          break;
-        case "image/jpeg":
-          extension = ".jpeg";
-          break;
-        default:
-          throw new Error(
-            "invalid or unsupported image type: " + imageFile.type,
-          );
-      }
-
-      filename = fileHash + extension;
-    } catch (e) {
-      console.error(e);
-    }
-
-    try {
-      await rename(filePathTemp, `${IMG_DIR}/${filename}`);
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  // TODO: replace custom type with Prisma's generated type
-  const fields: newPostType = { title };
-  if (hasImage) {
-    fields.imageId = filename;
-    try {
-      await uploadFileToCDN(filename);
-      rmSync(`${IMG_DIR}/${filename}`);
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  if (content) {
-    fields.content = content;
-  }
-
-  const post = await prisma.post.create({
-    data: { ...fields, authorId: userId, shift: userData.shift },
-  });
-
-  return redirect(`/posts/${post.id}`);
+  return null;
 };
 
 export default function NewPostRoute() {
+  const navigate = useNavigate();
+
   const [files, setFiles] = useState<FileWithPreview[]>([]);
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [formError, setFormError] = useState("");
+
+  const uploadImage = useUploadPostImage();
+  const createPost = useCreatePost();
+  const isSubmitting = uploadImage.isPending || createPost.isPending;
 
   // https://github.com/react-dropzone/react-dropzone/issues/966
   const handleImagePreview = async (file: any) => {
@@ -237,7 +66,7 @@ export default function NewPostRoute() {
       "image/jpeg": [],
       "image/heic": [],
     },
-    onDrop: async (acceptedFiles, fileRejections) => {
+    onDrop: async (acceptedFiles) => {
       const previews = await Promise.all(
         acceptedFiles.map(async (file) => {
           const preview = await handleImagePreview(file);
@@ -248,7 +77,7 @@ export default function NewPostRoute() {
       setFiles(previews);
     },
     maxFiles: 1,
-    maxSize: MAX_FILE_SIZE, // 2MB
+    maxSize: MAX_FILE_SIZE,
   });
 
   const thumbs = files.map((file) => (
@@ -271,28 +100,64 @@ export default function NewPostRoute() {
     return () => files.forEach((file) => URL.revokeObjectURL(file.preview));
   }, []);
 
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setFormError("");
+
+    if (title.trim().length === 0) {
+      setFormError("Pealkiri ei tohi olla tühi.");
+      return;
+    }
+
+    const file = files[0];
+    if (!content && !file) {
+      setFormError("Postitus peab sisaldama teksti või pilti.");
+      return;
+    }
+
+    try {
+      let imageId: string | undefined;
+      if (file) {
+        const uploaded = await uploadImage.mutateAsync(file);
+        imageId = uploaded.fileName;
+      }
+
+      const { postId } = await createPost.mutateAsync({
+        title,
+        content: content || undefined,
+        imageId,
+      });
+
+      navigate(`/posts/${postId}`);
+    } catch (err) {
+      setFormError(err instanceof ApiError ? err.message : "Serveri viga.");
+    }
+  };
+
   const borderStyle = "border-2 rounded border-white";
   return (
     <div className="border-b border-pink-500 py-2 px-4">
       <p>Loo postitus</p>
-      <Form
-        method="post"
-        encType="multipart/form-data"
-        className="flex flex-col gap-2"
-      >
+      <form onSubmit={handleSubmit} className="flex flex-col gap-2">
         <div>
           <label htmlFor="title">Pealkiri:</label>
           <input
             type="text"
+            id="title"
             name="title"
             required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
             className={borderStyle + " block bg-white"}
           />
         </div>
         <div>
           <label htmlFor="content">Sisu:</label>
           <textarea
+            id="content"
             name="content"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
             className={borderStyle + " block w-full bg-white"}
           />
           <div
@@ -314,15 +179,19 @@ export default function NewPostRoute() {
             )}
           </div>
         </div>
+        <div className="text-xs font-semibold text-center tracking-wide text-red-500 w-full">
+          {formError}
+        </div>
         <div>
           <button
             type="submit"
+            disabled={isSubmitting}
             className="button text-center px-4 py-2 bg-pink-400 rounded"
           >
             Postita
           </button>
         </div>
-      </Form>
+      </form>
     </div>
   );
 }
