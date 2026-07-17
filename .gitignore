@@ -2,13 +2,13 @@
 node_modules
 .idea/
 
-# React Router
-/.react-router/
-/build/
+# Vite
+/dist/
+
+# Generated
+/app/routeTree.gen.ts
 
 /.cache
-/build
-/public/build
 /public/img
 .env
 

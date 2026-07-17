@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { type LoaderFunctionArgs, redirect, useNavigate } from "react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 
-import { requireUser } from "~/utils/auth.server";
+import { requireUser } from "~/utils/auth";
 import { ApiError } from "~/lib/api-client";
 import { useCreatePost, useUploadPostImage } from "~/lib/queries/posts";
 
@@ -13,17 +13,17 @@ interface FileWithPreview extends File {
 const ONE_MB = Math.pow(2, 20);
 const MAX_FILE_SIZE = 5 * ONE_MB;
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const user = await requireUser(request);
+export const Route = createFileRoute("/posts/new")({
+  loader: async ({ context, location }) => {
+    const user = await requireUser(context.queryClient, location.href);
+    if (user.role === "READER") {
+      throw redirect({ to: "/posts" });
+    }
+  },
+  component: NewPostRoute,
+});
 
-  if (user.role === "READER") {
-    throw redirect("/posts");
-  }
-
-  return null;
-};
-
-export default function NewPostRoute() {
+function NewPostRoute() {
   const navigate = useNavigate();
 
   const [files, setFiles] = useState<FileWithPreview[]>([]);
@@ -128,7 +128,7 @@ export default function NewPostRoute() {
         imageId,
       });
 
-      navigate(`/posts/${postId}`);
+      navigate({ to: "/posts/$postId", params: { postId } });
     } catch (err) {
       setFormError(err instanceof ApiError ? err.message : "Serveri viga.");
     }

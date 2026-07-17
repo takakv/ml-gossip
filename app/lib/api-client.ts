@@ -68,20 +68,3 @@ export async function apiFetch<T>(
 
   return parseResponse<T>(response);
 }
-
-export async function apiFetchServer<T>(
-  request: Request,
-  path: string,
-  init: RequestInit = {},
-): Promise<T> {
-  const cookie = request.headers.get("cookie");
-  const response = await fetch(`${API_URL}${path}`, {
-    ...init,
-    headers: buildHeaders(init, {
-      ...jsonHeaders(init.body),
-      ...(cookie ? { cookie } : {}),
-    }),
-  });
-
-  return parseResponse<T>(response);
-}

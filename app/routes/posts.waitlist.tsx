@@ -1,26 +1,26 @@
-import {
-  type LoaderFunctionArgs,
-  redirect,
-  useSearchParams,
-} from "react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { requireUser } from "~/utils/auth.server";
+import { requireUser } from "~/utils/auth";
 import { PostList } from "~/components/post-list";
 import { useWaitlistPosts } from "~/lib/queries/posts";
+import { parsePage } from "~/utils/search";
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const user = await requireUser(request);
+export const Route = createFileRoute("/posts/waitlist")({
+  validateSearch: (search: Record<string, unknown>): { page?: number } => {
+    const page = parsePage(search.page);
+    return page > 1 ? { page } : {};
+  },
+  loader: async ({ context, location }) => {
+    const user = await requireUser(context.queryClient, location.href);
+    if (user.role !== "ADMIN") {
+      throw redirect({ to: "/" });
+    }
+  },
+  component: ApprovePostRoute,
+});
 
-  if (user.role !== "ADMIN") {
-    throw redirect(`/`);
-  }
-
-  return null;
-};
-
-export default function ApprovePostRoute() {
-  const [searchParams] = useSearchParams();
-  const page = parseInt(searchParams.get("page") ?? "1", 10) || 1;
+function ApprovePostRoute() {
+  const { page = 1 } = Route.useSearch();
 
   return <PostList query={useWaitlistPosts(page)} />;
 }

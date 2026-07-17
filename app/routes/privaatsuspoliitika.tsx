@@ -1,6 +1,10 @@
-import React from "react";
+import { createFileRoute } from "@tanstack/react-router";
 
-export default function PPRoute() {
+export const Route = createFileRoute("/privaatsuspoliitika")({
+  component: PPRoute,
+});
+
+function PPRoute() {
   return (
     <div className="max-w-xl mx-auto p-4">
       <h1 className="pb-4 font-black">

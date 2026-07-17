@@ -1,29 +1,39 @@
 import { useState } from "react";
 import {
+  createFileRoute,
   Link,
-  type LoaderFunctionArgs,
   redirect,
   useNavigate,
-  useSearchParams,
-} from "react-router";
+} from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 
 import { Layout } from "~/components/layout";
 import { FormField } from "~/components/form-field";
-import { getUser } from "~/utils/auth.server";
+import { getUser } from "~/utils/auth";
 import { ApiError, apiFetch } from "~/lib/api-client";
 import { validatePassword, validateUsername } from "~/utils/validators";
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  // If there's already a user in the session, redirect to the home page
-  return (await getUser(request)) ? redirect("/") : null;
-};
+export const Route = createFileRoute("/login")({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { redirectTo?: string } => ({
+    redirectTo:
+      typeof search.redirectTo === "string" ? search.redirectTo : undefined,
+  }),
+  loader: async ({ context }) => {
+    // If there's already a user in the session, redirect to the home page
+    if (await getUser(context.queryClient)) {
+      throw redirect({ to: "/" });
+    }
+  },
+  component: Login,
+});
 
 type LoginResponse = { username: string; role: string };
 
-export default function Login() {
+function Login() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const { redirectTo } = Route.useSearch();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -39,7 +49,7 @@ export default function Login() {
         body: JSON.stringify(vars),
       }),
     onSuccess: () => {
-      navigate(searchParams.get("redirectTo") || "/");
+      navigate({ to: redirectTo || "/" } as Parameters<typeof navigate>[0]);
     },
   });
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router";
+import { Link } from "@tanstack/react-router";
 
 const PaginationButton = ({
   children,
@@ -21,7 +21,9 @@ export const Pagination = ({ currentPage, totalPages }: PaginationProps) => {
   const numberPadding = 2;
   const pageNumbersNav = [
     <PaginationButton key={1} isActive={currentPage === 1}>
-      <Link to="?page=1">1</Link>
+      <Link to="." search={{ page: 1 }}>
+        1
+      </Link>
     </PaginationButton>,
   ];
 
@@ -34,7 +36,9 @@ export const Pagination = ({ currentPage, totalPages }: PaginationProps) => {
     if (i <= 1 || i >= totalPages) continue;
     pageNumbersNav.push(
       <PaginationButton key={i} isActive={currentPage === i}>
-        <Link to={`?page=${i}`}>{i}</Link>
+        <Link to="." search={{ page: i }}>
+          {i}
+        </Link>
       </PaginationButton>,
     );
   }
@@ -43,7 +47,9 @@ export const Pagination = ({ currentPage, totalPages }: PaginationProps) => {
   if (totalPages > 1)
     pageNumbersNav.push(
       <PaginationButton key={totalPages} isActive={currentPage === totalPages}>
-        <Link to={`?page=${totalPages}`}>{totalPages}</Link>
+        <Link to="." search={{ page: totalPages }}>
+          {totalPages}
+        </Link>
       </PaginationButton>,
     );
 

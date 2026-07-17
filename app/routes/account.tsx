@@ -1,9 +1,9 @@
 import { useState } from "react";
-import type { LoaderFunctionArgs } from "react-router";
-import { useLoaderData } from "react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 
-import { requireUser } from "~/utils/auth.server";
+import { requireUser } from "~/utils/auth";
+import { useCurrentUser } from "~/lib/queries/user";
 import { ApiError, apiFetch } from "~/lib/api-client";
 import {
   validatePassword,
@@ -11,13 +11,16 @@ import {
 } from "~/utils/validators";
 import { MobileSidebar, Sidebar } from "~/components/sidebar";
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const user = await requireUser(request);
-  return { role: user.role, username: user.username };
-};
+export const Route = createFileRoute("/account")({
+  loader: async ({ context, location }) => {
+    await requireUser(context.queryClient, location.href);
+  },
+  component: AccountRoute,
+});
 
-export default function AccountRoute() {
-  const data = useLoaderData<typeof loader>();
+function AccountRoute() {
+  const { data } = useCurrentUser();
+  if (!data) return null;
 
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");

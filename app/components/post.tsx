@@ -1,5 +1,4 @@
-import React from "react";
-import { Link } from "react-router";
+import { Link } from "@tanstack/react-router";
 import { cdnPrefix } from "~/utils/vars";
 import { useSetPostLike } from "~/lib/queries/posts";
 import { useCurrentUser } from "~/lib/queries/user";
@@ -40,7 +39,7 @@ export const PostCard = ({
   return (
     <li className="border-b border-pink-500">
       <div className="px-4">
-        <Link to={`/posts/${id}`}>
+        <Link to="/posts/$postId" params={{ postId: id }}>
           <article className="py-2">
             <div className="flex items-center">
               <h3 className="font-bold">{title}</h3>

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { createFileRoute } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -22,6 +23,10 @@ import { Button } from "~/components/ui/button";
 import React from "react";
 import { argon2id } from "hash-wasm";
 
+export const Route = createFileRoute("/reset-password")({
+  component: ResetPassword,
+});
+
 const formSchema = z.object({
   password: z.string().min(6, {
     message: "Salasõna peab olema vähemalt 6 tähemärki pikk.",
@@ -34,7 +39,7 @@ const toUnpaddedBase64 = (bytes: Uint8Array): string =>
 const hexToBytes = (hex: string): Uint8Array =>
   new Uint8Array(hex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)));
 
-const ResetPassword = () => {
+function ResetPassword() {
   const [passwordHash, setPasswordHash] = React.useState<string | null>(null);
   const [copied, setCopied] = React.useState(false);
 
@@ -135,6 +140,4 @@ const ResetPassword = () => {
       </div>
     </div>
   );
-};
-
-export default ResetPassword;
+}

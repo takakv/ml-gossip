@@ -1,6 +1,10 @@
-import React from "react";
+import { createFileRoute } from "@tanstack/react-router";
 
-export default function ContactRoute() {
+export const Route = createFileRoute("/kontakt")({
+  component: ContactRoute,
+});
+
+function ContactRoute() {
   return (
     <div className="max-w-xl mx-auto px-4 pt-4">
       <h1 className="pb-4 font-black">Kui sa vajad abi</h1>

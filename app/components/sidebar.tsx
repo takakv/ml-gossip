@@ -1,5 +1,4 @@
-import React from "react";
-import { Link } from "react-router";
+import { Link, type LinkProps } from "@tanstack/react-router";
 import type { Role } from "~/lib/queries/user";
 
 interface SidebarProps {
@@ -7,7 +6,7 @@ interface SidebarProps {
 }
 
 interface SidebarEntryProps {
-  link: string;
+  link: LinkProps["to"];
   icon: string;
   title: string;
 }

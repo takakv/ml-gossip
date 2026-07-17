@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery } from "@tanstack/react-query";
 
 import { apiFetch } from "~/lib/api-client";
 
@@ -10,10 +10,13 @@ export type CurrentUser = {
   role: Role;
 };
 
+export const currentUserQueryOptions = queryOptions({
+  queryKey: ["currentUser"],
+  queryFn: () => apiFetch<CurrentUser>("/account"),
+  staleTime: 5 * 60 * 1000,
+  retry: false,
+});
+
 export function useCurrentUser() {
-  return useQuery({
-    queryKey: ["currentUser"],
-    queryFn: () => apiFetch<CurrentUser>("/account"),
-    staleTime: 5 * 60 * 1000,
-  });
+  return useQuery(currentUserQueryOptions);
 }

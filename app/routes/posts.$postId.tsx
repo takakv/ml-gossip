@@ -1,4 +1,4 @@
-import { useNavigate, useParams, useRouteLoaderData } from "react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
 import { cdnPrefix } from "~/utils/vars";
 import { ApiError } from "~/lib/api-client";
@@ -9,18 +9,19 @@ import {
   usePost,
   useSetPostLike,
 } from "~/lib/queries/posts";
-import type { loader as postsLayoutLoader } from "~/routes/posts";
 
-export default function PostRoute() {
-  const { postId } = useParams();
+export const Route = createFileRoute("/posts/$postId")({
+  component: PostRoute,
+});
+
+function PostRoute() {
+  const { postId } = Route.useParams();
   const navigate = useNavigate();
 
-  const layoutData =
-    useRouteLoaderData<typeof postsLayoutLoader>("routes/posts");
-  const isAdmin = layoutData?.role === "ADMIN";
-
   const { data: currentUser } = useCurrentUser();
-  const { data: post, isPending, isError, error } = usePost(postId!);
+  const isAdmin = currentUser?.role === "ADMIN";
+
+  const { data: post, isPending, isError, error } = usePost(postId);
 
   const setLike = useSetPostLike();
   const approvePost = useApprovePost();
@@ -64,7 +65,7 @@ export default function PostRoute() {
             onClick={() =>
               currentUser &&
               setLike.mutate({
-                postId: postId!,
+                postId: postId,
                 userId: currentUser.id,
                 liked,
               })
@@ -81,7 +82,7 @@ export default function PostRoute() {
             <button
               type="button"
               disabled={approvePost.isPending}
-              onClick={() => approvePost.mutate(postId!)}
+              onClick={() => approvePost.mutate(postId)}
               className="bg-pink-400 px-4 py-2 rounded mr-4 hover:cursor-pointer"
             >
               Kinnita
@@ -91,8 +92,8 @@ export default function PostRoute() {
             type="button"
             disabled={deletePost.isPending}
             onClick={() =>
-              deletePost.mutate(postId!, {
-                onSuccess: () => navigate("/posts"),
+              deletePost.mutate(postId, {
+                onSuccess: () => navigate({ to: "/posts" }),
               })
             }
             className="bg-pink-400 px-4 py-2 rounded hover:cursor-pointer"
