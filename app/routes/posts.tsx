@@ -18,11 +18,11 @@ function PostsRoute() {
   return (
     <>
       <MobileSidebar role={user.role} />
-      <div className="flex bg-pink-200">
+      <div className="flex bg-muted">
         <Sidebar role={user.role} />
         <main className="w-full h-screen overflow-y-scroll">
-          <section className="bg-pink-300 mb-14 sm:mb-0">
-            <h2 className="text-center font-bold py-2 border-b border-pink-500">
+          <section className="mb-14 sm:mb-0">
+            <h2 className="text-center font-bold py-2 border-b border-border">
               Merelaagri gossip
             </h2>
             <Outlet />

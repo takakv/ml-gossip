@@ -8,7 +8,7 @@ const PaginationButton = ({
   children: React.ReactNode;
   isActive?: boolean;
 }) => {
-  const className = "px-2 py-1" + (isActive ? " bg-pink-400" : "");
+  const className = "px-2 py-1" + (isActive ? " bg-primary text-primary-foreground" : "");
   return <li className={className}>{children}</li>;
 };
 

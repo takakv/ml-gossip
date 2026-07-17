@@ -30,7 +30,7 @@ function PostRoute() {
   if (isPending) return <p className="p-4">Laadin...</p>;
   if (isError)
     return (
-      <p className="p-4 text-red-500">
+      <p className="p-4 text-destructive">
         {error instanceof ApiError ? error.message : "Postitust ei leitud."}
       </p>
     );
@@ -41,11 +41,11 @@ function PostRoute() {
   return (
     <>
       {!post.published ? (
-        <div className="bg-pink-400 px-4 py-2 text-pink-800">
+        <div className="bg-primary px-4 py-2 text-primary-foreground">
           <em>Postitus on ootel. Admin peab selle kinnitama.</em>
         </div>
       ) : null}
-      <article className="bg-pink-300 px-4 py-2 border-b border-pink-500">
+      <article className="bg-card px-4 py-2 border-b border-border">
         <h3 className="font-bold">{post.title}</h3>
         <p className="whitespace-pre-wrap">{post.content}</p>
         {post.imageId ? (
@@ -59,7 +59,7 @@ function PostRoute() {
         <div className="flex mt-2">
           <button
             type="button"
-            className="material-symbols-rounded"
+            className="material-symbols-rounded text-primary"
             style={{ fontVariationSettings: `'FILL' ${liked ? 1 : 0}` }}
             disabled={!currentUser || setLike.isPending}
             onClick={() =>
@@ -83,7 +83,7 @@ function PostRoute() {
               type="button"
               disabled={approvePost.isPending}
               onClick={() => approvePost.mutate(postId)}
-              className="bg-pink-400 px-4 py-2 rounded mr-4 hover:cursor-pointer"
+              className="bg-primary text-primary-foreground px-4 py-2 rounded mr-4 hover:cursor-pointer"
             >
               Kinnita
             </button>
@@ -96,7 +96,7 @@ function PostRoute() {
                 onSuccess: () => navigate({ to: "/posts" }),
               })
             }
-            className="bg-pink-400 px-4 py-2 rounded hover:cursor-pointer"
+            className="bg-primary text-primary-foreground px-4 py-2 rounded hover:cursor-pointer"
           >
             Kustuta
           </button>

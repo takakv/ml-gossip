@@ -37,14 +37,14 @@ export const PostCard = ({
   const setLike = useSetPostLike();
 
   return (
-    <li className="border-b border-pink-500">
-      <div className="px-4">
+    <li className="border-b border-border">
+      <div className="px-4 bg-card">
         <Link to="/posts/$postId" params={{ postId: id }}>
           <article className="py-2">
             <div className="flex items-center">
               <h3 className="font-bold">{title}</h3>
               <span
-                className="ml-2 text-pink-200 text-xs"
+                className="ml-2 text-muted-foreground text-xs"
                 suppressHydrationWarning={true} // needed due to the potential client-server timezone mismatch
               >
                 {localisedDate} @ {localisedTime}
@@ -67,7 +67,7 @@ export const PostCard = ({
           <button
             type="button"
             name="intent"
-            className="material-symbols-rounded"
+            className="material-symbols-rounded text-chart-2"
             style={{ fontVariationSettings: `'FILL' ${isLiked ? 1 : 0}` }}
             disabled={!currentUser || setLike.isPending}
             onClick={() =>

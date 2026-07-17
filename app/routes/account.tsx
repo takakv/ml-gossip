@@ -56,11 +56,11 @@ function AccountRoute() {
   return (
     <>
       <MobileSidebar role={data.role} />
-      <div className="flex bg-pink-200">
+      <div className="flex bg-muted">
         <Sidebar role={data.role} />
         <main className="w-full h-screen overflow-y-scroll">
-          <section className="bg-pink-300 mb-14 sm:mb-0">
-            <h2 className="text-center font-bold py-2 border-b border-pink-500">
+          <section className="bg-card mb-14 sm:mb-0">
+            <h2 className="text-center font-bold py-2 border-b border-border">
               Merelaagri gossip
             </h2>
             <div className="mx-4 pb-2">
@@ -78,13 +78,13 @@ function AccountRoute() {
                       type="password"
                       id="password"
                       name="password"
-                      className="w-full p-2 rounded-xl my-2 bg-white"
+                      className="w-full p-2 rounded-xl my-2 bg-background"
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
 
-                    <div className="text-xs font-semibold text-center tracking-wide text-red-500 w-full">
+                    <div className="text-xs font-semibold text-center tracking-wide text-destructive w-full">
                       {errors.password || ""}
                     </div>
                   </div>
@@ -98,26 +98,26 @@ function AccountRoute() {
                       type="password"
                       id="password-confirmation"
                       name="password-confirmation"
-                      className="w-full p-2 rounded-xl my-2 bg-white"
+                      className="w-full p-2 rounded-xl my-2 bg-background"
                       required
                       value={passwordConfirmation}
                       onChange={(e) => setPasswordConfirmation(e.target.value)}
                     />
 
-                    <div className="text-xs font-semibold text-center tracking-wide text-red-500 w-full">
+                    <div className="text-xs font-semibold text-center tracking-wide text-destructive w-full">
                       {errors.passwordConfirmation || ""}
                     </div>
                   </div>
                   <button
                     type="submit"
                     disabled={changePassword.isPending}
-                    className="bg-pink-400 px-4 py-2 rounded"
+                    className="bg-primary text-primary-foreground px-4 py-2 rounded"
                   >
                     Muuda
                   </button>
                 </form>
                 {changePassword.isError ? (
-                  <span className="text-red-500">
+                  <span className="text-destructive">
                     {changePassword.error instanceof ApiError
                       ? changePassword.error.message
                       : "Serveri viga."}

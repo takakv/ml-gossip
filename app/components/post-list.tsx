@@ -14,7 +14,7 @@ export function PostList({ query }: PostListProps) {
 
   if (query.isError)
     return (
-      <p className="p-4 text-red-500">
+      <p className="p-4 text-destructive">
         {query.error instanceof ApiError
           ? query.error.message
           : "Serveri viga."}

@@ -13,7 +13,7 @@ interface SidebarEntryProps {
 
 const SidebarEntry = ({ link, icon, title }: SidebarEntryProps) => {
   return (
-    <Link to={link} className="flex items-center hover:bg-pink-300 py-1">
+    <Link to={link} className="flex items-center hover:bg-sidebar-accent py-1">
       <span
         className="material-symbols-rounded mx-2"
         style={{ fontSize: "1.2rem" }}
@@ -30,7 +30,7 @@ export const Sidebar = ({ role }: SidebarProps) => {
   const isAnon = role === "READER";
 
   return (
-    <header className="hidden sm:block h-screen border-pink-500 border-r py-8">
+    <header className="hidden sm:block h-screen border-border border-r py-8">
       <div className="h-full w-40 flex flex-col justify-between">
         <nav className="flex flex-col pt-2">
           <SidebarEntry link="/posts" icon="chat_bubble" title="Kumu" />
@@ -49,7 +49,7 @@ export const Sidebar = ({ role }: SidebarProps) => {
           <div className="">
             <Link
               to="/posts/new"
-              className="block mx-4 bg-pink-400 cursor-pointer rounded"
+              className="block mx-4 bg-primary text-primary-foreground cursor-pointer rounded"
             >
               <p className="px-4 py-2 text-center">Loo postitus</p>
             </Link>
@@ -70,13 +70,13 @@ export const MobileSidebar = ({ role }: SidebarProps) => {
         <div className="absolute right-0 bottom-14">
           <Link
             to="/posts/new"
-            className="rounded-full w-14 h-14 bg-pink-200 border border-pink-500 mb-4 mr-4 flex justify-center items-center p-2"
+            className="rounded-full w-14 h-14 bg-muted border border-border mb-4 mr-4 flex justify-center items-center p-2"
           >
             <span className="material-symbols-rounded">edit</span>
           </Link>
         </div>
       )}
-      <div className="absolute bottom-0 w-full bg-pink-200 border-t border-pink-500">
+      <div className="absolute bottom-0 w-full bg-muted border-t border-border">
         <nav className="h-14 flex items-center justify-center gap-4">
           <Link to="/posts" className="p-2 flex items-center justify-center">
             <span className="material-symbols-rounded">chat_bubble</span>

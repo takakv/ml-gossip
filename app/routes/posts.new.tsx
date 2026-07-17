@@ -134,9 +134,9 @@ function NewPostRoute() {
     }
   };
 
-  const borderStyle = "border-2 rounded border-white";
+  const borderStyle = "border-2 rounded border-border";
   return (
-    <div className="border-b border-pink-500 py-2 px-4">
+    <div className="border-b border-border py-2 px-4">
       <p>Loo postitus</p>
       <form onSubmit={handleSubmit} className="flex flex-col gap-2">
         <div>
@@ -148,7 +148,7 @@ function NewPostRoute() {
             required
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className={borderStyle + " block bg-white"}
+            className={borderStyle + " block bg-background"}
           />
         </div>
         <div>
@@ -158,11 +158,11 @@ function NewPostRoute() {
             name="content"
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className={borderStyle + " block w-full bg-white"}
+            className={borderStyle + " block w-full bg-background"}
           />
           <div
             {...getRootProps()}
-            className="mt-2 flex flex-col items-center p-6 bg-pink-200 rounded border border-dashed border-pink-500"
+            className="mt-2 flex flex-col items-center p-6 bg-muted rounded border border-dashed border-border"
           >
             <input {...getInputProps()} name="image" />
             {isDragActive ? (
@@ -179,14 +179,14 @@ function NewPostRoute() {
             )}
           </div>
         </div>
-        <div className="text-xs font-semibold text-center tracking-wide text-red-500 w-full">
+        <div className="text-xs font-semibold text-center tracking-wide text-destructive w-full">
           {formError}
         </div>
         <div>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="button text-center px-4 py-2 bg-pink-400 rounded"
+            className="button text-center px-4 py-2 bg-primary text-primary-foreground rounded"
           >
             Postita
           </button>

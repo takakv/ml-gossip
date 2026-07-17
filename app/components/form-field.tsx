@@ -39,12 +39,12 @@ export function FormField({
         type={type}
         id={htmlFor}
         name={htmlFor}
-        className="w-full p-2 rounded-xl my-2 bg-white disabled:opacity-60"
+        className="w-full p-2 rounded-xl my-2 bg-background disabled:opacity-60"
         value={value}
         disabled={disabled}
       />
 
-      <div className="text-xs font-semibold text-center tracking-wide text-red-500 w-full">
+      <div className="text-xs font-semibold text-center tracking-wide text-destructive w-full">
         {errorText || ""}
       </div>
     </>

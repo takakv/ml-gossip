@@ -75,7 +75,7 @@ function ResetPassword() {
   };
 
   return (
-    <div className="h-screen w-full bg-radical-red-50 font-mono">
+    <div className="h-screen w-full bg-muted font-mono">
       <div className="h-full justify-center items-center flex flex-col gap-y-4 mx-4">
         <Card className="w-full max-w-md">
           <CardHeader>
