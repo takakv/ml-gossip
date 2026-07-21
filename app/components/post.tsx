@@ -10,6 +10,7 @@ interface PostProps {
   imageId: string | null;
   isLiked: boolean;
   likeCount: number;
+  commentCount: number;
   createdAt: string;
 }
 
@@ -20,6 +21,7 @@ export const PostCard = ({
   imageId,
   isLiked,
   likeCount,
+  commentCount,
   createdAt,
 }: PostProps) => {
   const date = new Date(createdAt);
@@ -63,25 +65,35 @@ export const PostCard = ({
             )}
           </article>
         </Link>
-        <div className="flex mt-2">
-          <button
-            type="button"
-            name="intent"
-            className="material-symbols-rounded text-chart-2"
-            style={{ fontVariationSettings: `'FILL' ${isLiked ? 1 : 0}` }}
-            disabled={!currentUser || setLike.isPending}
-            onClick={() =>
-              currentUser &&
-              setLike.mutate({
-                postId: id,
-                userId: currentUser.id,
-                liked: isLiked,
-              })
-            }
+        <div className="flex items-center gap-4 mt-2">
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              name="intent"
+              className="material-symbols-rounded text-chart-2"
+              style={{ fontVariationSettings: `'FILL' ${isLiked ? 1 : 0}` }}
+              disabled={!currentUser || setLike.isPending}
+              onClick={() =>
+                currentUser &&
+                setLike.mutate({
+                  postId: id,
+                  userId: currentUser.id,
+                  liked: isLiked,
+                })
+              }
+            >
+              favorite
+            </button>
+            <span>{likeCount}</span>
+          </div>
+          <Link
+            to="/posts/$postId"
+            params={{ postId: id }}
+            className="flex items-center gap-1 text-muted-foreground"
           >
-            favorite
-          </button>
-          <span>{likeCount}</span>
+            <span className="material-symbols-rounded">chat_bubble</span>
+            <span>{commentCount}</span>
+          </Link>
         </div>
       </div>
     </li>

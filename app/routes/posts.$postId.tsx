@@ -10,6 +10,7 @@ import {
   useSetPostLike,
 } from "~/lib/queries/posts";
 import { Button } from "~/components/ui/button.tsx";
+import { Comments } from "~/components/comments";
 
 export const Route = createFileRoute("/posts/$postId")({
   component: PostRoute,
@@ -57,26 +58,33 @@ function PostRoute() {
         ) : (
           ""
         )}
-        <div className="flex mt-2">
-          <button
-            type="button"
-            className="material-symbols-rounded text-primary"
-            style={{ fontVariationSettings: `'FILL' ${liked ? 1 : 0}` }}
-            disabled={!currentUser || setLike.isPending}
-            onClick={() =>
-              currentUser &&
-              setLike.mutate({
-                postId: postId,
-                userId: currentUser.id,
-                liked,
-              })
-            }
-          >
-            favorite
-          </button>
-          <span>{likeCount}</span>
+        <div className="flex items-center gap-4 mt-2">
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              className="material-symbols-rounded text-primary"
+              style={{ fontVariationSettings: `'FILL' ${liked ? 1 : 0}` }}
+              disabled={!currentUser || setLike.isPending}
+              onClick={() =>
+                currentUser &&
+                setLike.mutate({
+                  postId: postId,
+                  userId: currentUser.id,
+                  liked,
+                })
+              }
+            >
+              favorite
+            </button>
+            <span>{likeCount}</span>
+          </div>
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <span className="material-symbols-rounded">chat_bubble</span>
+            <span>{post.commentCount}</span>
+          </div>
         </div>
       </article>
+      <Comments postId={postId} />
       {isAdmin && (
         <div className="py-4 mx-4 flex gap-2">
           {!post.published && (

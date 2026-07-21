@@ -16,10 +16,24 @@ export type Post = {
   published: boolean;
   isLiked: boolean;
   likeCount: number;
+  commentCount: number;
 };
 
 export type PostsPage = {
   posts: Post[];
+  currentPage: number;
+  totalPages: number;
+};
+
+export type Comment = {
+  id: string;
+  content: string;
+  createdAt: string;
+  isAuthor: boolean;
+};
+
+export type CommentsPage = {
+  comments: Comment[];
   currentPage: number;
   totalPages: number;
 };
@@ -70,6 +84,46 @@ export function usePost(postId: string) {
     queryFn: () => apiFetch<{ post: Post }>(`/posts/${postId}`),
     select: (data) => data.post,
     enabled: Boolean(postId),
+  });
+}
+
+export function useComments(postId: string, page: number) {
+  const pageNumber = normalizePage(page);
+  return useQuery({
+    queryKey: ["comments", postId, pageNumber],
+    queryFn: () =>
+      apiFetch<CommentsPage>(`/posts/${postId}/comments?page=${pageNumber}`),
+    placeholderData: keepPreviousData,
+    enabled: Boolean(postId),
+  });
+}
+
+export function useCreateComment(postId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (content: string) =>
+      apiFetch<{ commentId: string }>(`/posts/${postId}/comments`, {
+        method: "POST",
+        body: JSON.stringify({ content }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["comments", postId] });
+      void queryClient.invalidateQueries({ queryKey: ["post", postId] });
+      void queryClient.invalidateQueries({ queryKey: ["posts"] });
+    },
+  });
+}
+
+export function useDeleteComment(postId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (commentId: string) =>
+      apiFetch(`/posts/${postId}/comments/${commentId}`, { method: "DELETE" }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["comments", postId] });
+      void queryClient.invalidateQueries({ queryKey: ["post", postId] });
+      void queryClient.invalidateQueries({ queryKey: ["posts"] });
+    },
   });
 }
 

@@ -35,6 +35,7 @@ export function PostList({ query }: PostListProps) {
             imageId={post.imageId}
             isLiked={post.isLiked}
             likeCount={post.likeCount}
+            commentCount={post.commentCount}
             createdAt={post.createdAt}
           />
         ))}
