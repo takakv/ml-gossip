@@ -12,6 +12,7 @@ export type Post = {
   title: string;
   content: string | null;
   imageId: string | null;
+  videoId: string | null;
   createdAt: string;
   published: boolean;
   isLiked: boolean;
@@ -37,6 +38,20 @@ export type CommentsPage = {
   currentPage: number;
   totalPages: number;
 };
+
+export type PostConfig = {
+  maxVideoDurationSeconds: number;
+  maxImageSizeBytes: number;
+  maxVideoSizeBytes: number;
+};
+
+export function usePostConfig() {
+  return useQuery({
+    queryKey: ["post-config"],
+    queryFn: () => apiFetch<PostConfig>("/posts/config"),
+    staleTime: 60 * 60 * 1000,
+  });
+}
 
 function normalizePage(page: number) {
   return Number.isFinite(page) && page >= 1 ? Math.floor(page) : 1;
@@ -178,7 +193,12 @@ export function useDeletePost() {
 export function useCreatePost() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: { title: string; content?: string; imageId?: string }) =>
+    mutationFn: (body: {
+      title: string;
+      content?: string;
+      imageId?: string;
+      videoId?: string;
+    }) =>
       apiFetch<{ postId: string }>("/posts", {
         method: "POST",
         body: JSON.stringify(body),
@@ -195,6 +215,19 @@ export function useUploadPostImage() {
       const formData = new FormData();
       formData.append("image", file);
       return apiFetch<{ fileName: string }>("/posts/images", {
+        method: "POST",
+        body: formData,
+      });
+    },
+  });
+}
+
+export function useUploadPostVideo() {
+  return useMutation({
+    mutationFn: (file: File) => {
+      const formData = new FormData();
+      formData.append("video", file);
+      return apiFetch<{ videoId: string }>("/posts/videos", {
         method: "POST",
         body: formData,
       });

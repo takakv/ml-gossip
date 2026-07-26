@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { cdnPrefix } from "~/utils/vars";
+
+import { cdnPrefix, streamThumbnail } from "~/utils/vars";
 import { useSetPostLike } from "~/lib/queries/posts";
 import { useCurrentUser } from "~/lib/queries/user";
 
@@ -8,6 +10,7 @@ interface PostProps {
   title: string;
   content: string | null;
   imageId: string | null;
+  videoId: string | null;
   isLiked: boolean;
   likeCount: number;
   commentCount: number;
@@ -19,6 +22,7 @@ export const PostCard = ({
   title,
   content,
   imageId,
+  videoId,
   isLiked,
   likeCount,
   commentCount,
@@ -38,6 +42,8 @@ export const PostCard = ({
   const { data: currentUser } = useCurrentUser();
   const setLike = useSetPostLike();
 
+  const [thumbFailed, setThumbFailed] = useState(false);
+
   return (
     <li className="border-b border-border">
       <div className="px-4 bg-card">
@@ -54,12 +60,33 @@ export const PostCard = ({
             </div>
             <p className="line-clamp-5 whitespace-pre-wrap">{content}</p>
             {imageId ? (
-              <div className="overflow-hidden max-h-[500px] max-w-[400px] rounded">
+              <div className="overflow-hidden max-h-125 max-w-100 rounded">
                 <img
                   src={cdnPrefix + imageId}
-                  className="w-auto rounded max-h-[200px]"
+                  className="w-auto rounded max-h-50"
                 />
               </div>
+            ) : videoId ? (
+              thumbFailed ? (
+                <div className="relative flex h-50 max-w-100 items-center justify-center rounded bg-muted">
+                  <span className="material-symbols-rounded text-6xl text-foreground/70">
+                    play_circle
+                  </span>
+                </div>
+              ) : (
+                <div className="relative w-fit">
+                  <img
+                    src={streamThumbnail(videoId)}
+                    className="block max-h-50 w-auto rounded"
+                    onError={() => setThumbFailed(true)}
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="material-symbols-rounded text-6xl text-white/90 drop-shadow-lg">
+                      play_circle
+                    </span>
+                  </div>
+                </div>
+              )
             ) : (
               ""
             )}

@@ -4,7 +4,12 @@ import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 
 import { requireUser } from "~/utils/auth";
 import { ApiError } from "~/lib/api-client";
-import { useCreatePost, useUploadPostImage } from "~/lib/queries/posts";
+import {
+  useCreatePost,
+  usePostConfig,
+  useUploadPostImage,
+  useUploadPostVideo,
+} from "~/lib/queries/posts";
 
 import { Field, FieldLabel } from "~/components/ui/field.tsx";
 import { Input } from "~/components/ui/input.tsx";
@@ -16,7 +21,10 @@ interface FileWithPreview extends File {
 }
 
 const ONE_MB = Math.pow(2, 20);
-const MAX_FILE_SIZE = 5 * ONE_MB;
+
+const isVideoFile = (file: File) => file.type.startsWith("video/");
+
+const formatMegabytes = (bytes: number) => `${Math.round(bytes / ONE_MB)}MB`;
 
 export const Route = createFileRoute("/posts/new")({
   loader: async ({ context, location }) => {
@@ -36,12 +44,20 @@ function NewPostRoute() {
   const [content, setContent] = useState("");
   const [formError, setFormError] = useState("");
 
+  const { data: config } = usePostConfig();
+
   const uploadImage = useUploadPostImage();
+  const uploadVideo = useUploadPostVideo();
   const createPost = useCreatePost();
-  const isSubmitting = uploadImage.isPending || createPost.isPending;
+  const isSubmitting =
+    uploadImage.isPending || uploadVideo.isPending || createPost.isPending;
 
   // https://github.com/react-dropzone/react-dropzone/issues/966
-  const handleImagePreview = async (file: any) => {
+  const createPreviewUrl = async (file: any) => {
+    if (isVideoFile(file)) {
+      return URL.createObjectURL(file);
+    }
+
     // Extract extension from file name or path
     const ext = (
       file.name ? file.name.split(".").pop() : file.path.split(".").pop()
@@ -70,35 +86,54 @@ function NewPostRoute() {
       "image/png": [],
       "image/jpeg": [],
       "image/heic": [],
+      "video/mp4": [],
+      "video/quicktime": [],
     },
     onDrop: async (acceptedFiles) => {
-      const previews = await Promise.all(
-        acceptedFiles.map(async (file) => {
-          const preview = await handleImagePreview(file);
-          return Object.assign(file, { preview });
-        }),
-      );
+      const file = acceptedFiles[0];
+      if (!file) return;
 
-      setFiles(previews);
+      // The dropzone caps everything at the (larger) video limit, so enforce
+      // the tighter image limit here.
+      if (
+        config &&
+        !isVideoFile(file) &&
+        file.size > config.maxImageSizeBytes
+      ) {
+        setFormError(
+          `Pilt on liiga suur. Maksimaalne lubatud suurus on ${formatMegabytes(
+            config.maxImageSizeBytes,
+          )}.`,
+        );
+        return;
+      }
+
+      setFormError("");
+      const preview = await createPreviewUrl(file);
+      setFiles([Object.assign(file, { preview })]);
     },
     maxFiles: 1,
-    maxSize: MAX_FILE_SIZE,
+    maxSize: config?.maxVideoSizeBytes,
   });
 
-  const thumbs = files.map((file) => (
-    <div key={file.name} className="inline-flex w-[100px] h-[100px]">
-      <div className="">
+  const file = files[0];
+
+  const preview = file ? (
+    <div className="inline-flex max-w-50">
+      {isVideoFile(file) ? (
+        <video src={file.preview} controls className="max-h-37.5 rounded" />
+      ) : (
         <img
-          className="block w-auto h-full m-auto"
+          className="block m-auto max-h-25 w-auto"
           src={file.preview}
           onLoad={() => {
             URL.revokeObjectURL(file.preview);
           }}
           alt="Üleslaetud fail"
         />
-      </div>
+      )}
     </div>
-  ));
+  ) : null;
 
   useEffect(() => {
     // Make sure to revoke the data uris to avoid memory leaks, will run on unmount
@@ -114,23 +149,29 @@ function NewPostRoute() {
       return;
     }
 
-    const file = files[0];
     if (!content && !file) {
-      setFormError("Postitus peab sisaldama teksti või pilti.");
+      setFormError("Postitus peab sisaldama teksti, pilti või videot.");
       return;
     }
 
     try {
       let imageId: string | undefined;
+      let videoId: string | undefined;
       if (file) {
-        const uploaded = await uploadImage.mutateAsync(file);
-        imageId = uploaded.fileName;
+        if (isVideoFile(file)) {
+          const uploaded = await uploadVideo.mutateAsync(file);
+          videoId = uploaded.videoId;
+        } else {
+          const uploaded = await uploadImage.mutateAsync(file);
+          imageId = uploaded.fileName;
+        }
       }
 
       const { postId } = await createPost.mutateAsync({
         title,
         content: content || undefined,
         imageId,
+        videoId,
       });
 
       navigate({ to: "/posts/$postId", params: { postId } });
@@ -166,17 +207,27 @@ function NewPostRoute() {
             {...getRootProps()}
             className="mt-2 flex flex-col items-center p-6 bg-muted rounded-2xl border border-dashed border-border"
           >
-            <input {...getInputProps()} name="image" />
+            <input {...getInputProps()} name="media" />
             {isDragActive ? (
-              <p>Lohista pildid siia ..</p>
+              <p>Lohista fail siia ..</p>
             ) : (
               <>
                 <p className="hidden md:block">
-                  Lohista pilt siia või klõpsa, et valida pilt
+                  Lohista pilt või video siia või klõpsa, et valida fail
                 </p>
-                <p className="md:hidden">Vajuta siia, et valida pilt</p>
-                <span>(max: 1 pilt, 5MB)</span>
-                <aside>{thumbs}</aside>
+                <p className="md:hidden">
+                  Vajuta siia, et valida pilt või video
+                </p>
+                <span>
+                  {config
+                    ? `(max: 1 fail, pilt ${formatMegabytes(
+                        config.maxImageSizeBytes,
+                      )}, video ${formatMegabytes(
+                        config.maxVideoSizeBytes,
+                      )} / ${config.maxVideoDurationSeconds}s)`
+                    : "(max: 1 fail)"}
+                </span>
+                <aside>{preview}</aside>
               </>
             )}
           </div>

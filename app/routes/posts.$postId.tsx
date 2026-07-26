@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
 import { cdnPrefix } from "~/utils/vars";
+import { VideoEmbed } from "~/components/video-embed";
 import { ApiError } from "~/lib/api-client";
 import { useCurrentUser } from "~/lib/queries/user";
 import {
@@ -51,10 +52,9 @@ function PostRoute() {
         <h3 className="font-bold">{post.title}</h3>
         <p className="whitespace-pre-wrap">{post.content}</p>
         {post.imageId ? (
-          <img
-            src={cdnPrefix + post.imageId}
-            className="max-h-[300px] m-auto"
-          />
+          <img src={cdnPrefix + post.imageId} className="max-h-75 m-auto" />
+        ) : post.videoId ? (
+          <VideoEmbed videoId={post.videoId} />
         ) : (
           ""
         )}

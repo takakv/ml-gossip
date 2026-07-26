@@ -33,6 +33,7 @@ export function PostList({ query }: PostListProps) {
             title={post.title}
             content={post.content}
             imageId={post.imageId}
+            videoId={post.videoId}
             isLiked={post.isLiked}
             likeCount={post.likeCount}
             commentCount={post.commentCount}
